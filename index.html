@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>    Functional Calculator</title>
+  <style>
+    /* Container */
+    .calculator {
+      width: 320px;
+      background-color: #222;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #000;
+      margin: 50px auto;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Display */
+    .display {
+      background-color: #000;
+      color: rgb(230, 223, 223);
+      font-size: 2.5rem;
+      text-align: right;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      overflow-x: auto;
+      user-select: none;
+      min-height: 50px;
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    /* Buttons container */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    /* Buttons style */
+    button {
+      padding: 20px;
+      font-size: 1.3rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #e7dbdb;
+      color: rgb(0, 0, 0);
+      cursor: pointer;
+      box-shadow: 0 4px #111;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+
+    button:active {
+      box-shadow: 0 2px #ad7171;
+      transform: translateY(2px);
+    }
+
+    button.operator {
+      background-color: #df8f1f;
+      color: rgb(7, 6, 6);
+    }
+
+    button.operator:active {
+      background-color: #cc7a00;
+    }
+
+    button.clear {
+      background-color: #ff3b30;
+    }
+
+    button.clear:active {
+      background-color: #cc2a22;
+    }
+
+    button.zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+    <title><h1>Functional Calculator</h1></title>
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="clear">C</button>
+      <button class="operator">÷</button>
+      <button class="operator">×</button>
+      <button class="operator">−</button>
+
+      <button>7</button>
+      <button>8</button>
+      <button>9</button>
+      <button class="operator">+</button>
+
+      <button>4</button>
+      <button>5</button>
+      <button>6</button>
+      <button id="equals">=</button>
+
+      <button>1</button>
+      <button>2</button>
+      <button>3</button>
+      <button>.</button>
+
+      <button class="zero">0</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const buttons = document.querySelectorAll('button');
+
+    let currentInput = '';
+    let lastInput = '';
+    let resultDisplayed = false;
+
+    // Map operators for calculation
+    const operatorsMap = {
+      '÷': '/',
+      '×': '*',
+      '−': '-',
+      '+': '+'
+    };
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const btnValue = button.textContent;
+
+        if (button.classList.contains('clear')) {
+          // Clear all
+          currentInput = '';
+          display.textContent = '0';
+          resultDisplayed = false;
+          return;
+        }
+
+        if (button.id === 'equals') {
+          // Evaluate expression
+          if (currentInput === '') return;
+
+          try {
+            // Replace symbols with JS operators
+            let expression = currentInput.replace(/[÷×−+]/g, match => operatorsMap[match]);
+
+            // Evaluate safely
+            let evalResult = Function('"use strict";return (' + expression + ')')();
+
+            // Display result, fix decimal issues
+            evalResult = Math.round((evalResult + Number.EPSILON) * 100000000) / 100000000;
+
+            display.textContent = evalResult;
+            currentInput = evalResult.toString();
+            resultDisplayed = true;
+          } catch (e) {
+            display.textContent = 'Error';
+            currentInput = '';
+            resultDisplayed = false;
+          }
+          return;
+        }
+
+        // If result displayed and user presses a number, reset
+        if (resultDisplayed && !button.classList.contains('operator') && btnValue !== '.') {
+          currentInput = '';
+          resultDisplayed = false;
+        }
+
+        // Prevent multiple operators in a row
+        if (button.classList.contains('operator')) {
+          if (currentInput === '') return; // prevent operator as first input
+          if (/[÷×−+.]$/.test(currentInput)) {
+            // Replace last operator with new one
+            currentInput = currentInput.slice(0, -1);
+          }
+          currentInput += btnValue;
+          display.textContent = currentInput;
+          return;
+        }
+
+        // Prevent multiple decimals in one number
+        if (btnValue === '.') {
+          // Split by operators to get current number
+          const parts = currentInput.split(/[÷×−+]/);
+          const lastNumber = parts[parts.length - 1];
+          if (lastNumber.includes('.')) return; // already has decimal
+          if (lastNumber === '') currentInput += '0'; // if decimal is first character in number, prepend 0
+        }
+
+        currentInput += btnValue;
+        display.textContent = currentInput;
+      });
+    });
+  </script>
+</body>
+</html>
